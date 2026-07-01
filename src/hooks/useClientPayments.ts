@@ -57,6 +57,21 @@ export function useCreateClientPayment() {
   })
 }
 
+export function useUpdateClientPayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...update }: Database['public']['Tables']['client_payments']['Update'] & { id: string }) => {
+      const { data, error } = await supabase.from('client_payments').update(update).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client_payments'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] })
+    },
+  })
+}
+
 export function useUploadVoucher() {
   const queryClient = useQueryClient()
   return useMutation({

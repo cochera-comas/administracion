@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import type { ClientWithVehicles } from '@/hooks/useClients'
 import type { ClientPaymentWithClient } from '@/hooks/useClientPayments'
 import { useUpdateClientPaymentStatus, useToggleVoucherVerified, getVoucherSignedUrl } from '@/hooks/useClientPayments'
+import { ClientPaymentFormDialog } from '@/components/payments/ClientPaymentFormDialog'
 import { formatCurrency, formatPlates, computeLateFee, toDateInputValue } from '@/lib/utils'
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
@@ -105,20 +106,25 @@ export function ClientPaymentTable({
                 )}
               </TableCell>
               <TableCell className="text-right">
-                {payment && payment.status !== 'paid' && (
-                  <button
-                    className="text-xs font-medium text-primary hover:underline"
-                    onClick={() =>
-                      updateStatus.mutate({
-                        id: payment.id,
-                        status: 'paid',
-                        payment_date: new Date().toISOString().slice(0, 10),
-                      })
-                    }
-                  >
-                    Marcar como pagado
-                  </button>
-                )}
+                <div className="flex items-center justify-end gap-3">
+                  {payment && payment.status !== 'paid' && (
+                    <button
+                      className="text-xs font-medium text-primary hover:underline"
+                      onClick={() =>
+                        updateStatus.mutate({
+                          id: payment.id,
+                          status: 'paid',
+                          payment_date: new Date().toISOString().slice(0, 10),
+                        })
+                      }
+                    >
+                      Marcar como pagado
+                    </button>
+                  )}
+                  {payment && (
+                    <ClientPaymentFormDialog clients={clients} period={period} payment={payment} />
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           )

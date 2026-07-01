@@ -20,13 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreateClientPayment, useUploadVoucher } from '@/hooks/useClientPayments'
+import {
+  useCreateClientPayment,
+  useUpdateClientPayment,
+  useUploadVoucher,
+  getVoucherSignedUrl,
+  type ClientPayment,
+} from '@/hooks/useClientPayments'
 import type { ClientWithVehicles } from '@/hooks/useClients'
 import { toDateInputValue, formatPlates, computeLateFee } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 const paymentSchema = z.object({
   client_id: z.string().min(1, 'Seleccioná un cliente'),
+  period: z.string().min(1, 'Requerido'),
   amount: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
   payment_date: z.string().optional(),
   method: z.enum(['cash', 'transfer', 'card', 'other']).optional(),
@@ -36,22 +43,55 @@ const paymentSchema = z.object({
 type PaymentFormInput = z.input<typeof paymentSchema>
 type PaymentFormValues = z.output<typeof paymentSchema>
 
+function toPeriodMonthValue(dateOrPeriodStr: Date | string) {
+  if (typeof dateOrPeriodStr === 'string') return dateOrPeriodStr.slice(0, 7)
+  return toDateInputValue(dateOrPeriodStr).slice(0, 7)
+}
+
 export function ClientPaymentFormDialog({
   clients,
   period,
   defaultClientId,
+  payment,
 }: {
   clients: ClientWithVehicles[]
   period: Date
   defaultClientId?: string
+  payment?: ClientPayment
 }) {
   const [open, setOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [voucherFile, setVoucherFile] = useState<File | null>(null)
+  const [openingVoucher, setOpeningVoucher] = useState(false)
   const createPayment = useCreateClientPayment()
+  const updatePayment = useUpdateClientPayment()
   const uploadVoucher = useUploadVoucher()
-  const periodStr = toDateInputValue(new Date(period.getFullYear(), period.getMonth(), 1))
-  const lateFee = computeLateFee(periodStr, new Date())
+  const isEdit = !!payment
+
+  function defaultFormValues(): PaymentFormInput {
+    if (payment) {
+      return {
+        client_id: payment.client_id,
+        period: toPeriodMonthValue(payment.period),
+        amount: payment.amount,
+        payment_date: payment.payment_date ?? toDateInputValue(new Date()),
+        method: payment.method ?? 'cash',
+        status: payment.status,
+      }
+    }
+    const initialClientId = defaultClientId ?? ''
+    const initialClient = clients.find((c) => c.id === initialClientId)
+    const periodMonth = toPeriodMonthValue(period)
+    const fee = initialClient ? initialClient.monthly_fee + computeLateFee(`${periodMonth}-01`, new Date()) : 0
+    return {
+      client_id: initialClientId,
+      period: periodMonth,
+      amount: fee,
+      payment_date: toDateInputValue(new Date()),
+      method: 'cash',
+      status: 'paid',
+    }
+  }
 
   const {
     register,
@@ -60,63 +100,87 @@ export function ClientPaymentFormDialog({
     watch,
     setValue,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, dirtyFields },
   } = useForm<PaymentFormInput, unknown, PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      client_id: defaultClientId ?? '',
-      amount: 0,
-      payment_date: toDateInputValue(new Date()),
-      method: 'cash',
-      status: 'paid',
-    },
+    defaultValues: defaultFormValues(),
   })
 
   const clientId = watch('client_id')
+  const periodMonth = watch('period')
+  const lateFee = periodMonth ? computeLateFee(`${periodMonth}-01`, new Date()) : 0
 
   useEffect(() => {
     if (open) {
-      const initialClientId = defaultClientId ?? ''
-      const initialClient = clients.find((c) => c.id === initialClientId)
-      reset({
-        client_id: initialClientId,
-        amount: initialClient ? initialClient.monthly_fee + lateFee : 0,
-        payment_date: toDateInputValue(new Date()),
-        method: 'cash',
-        status: 'paid',
-      })
+      reset(defaultFormValues())
       setVoucherFile(null)
       setFormError(null)
     }
-  }, [open, defaultClientId, clients, reset, lateFee])
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  function suggestAmount(id: string, month: string) {
+    if (dirtyFields.amount) return
+    const client = clients.find((c) => c.id === id)
+    if (client) setValue('amount', client.monthly_fee + computeLateFee(`${month}-01`, new Date()))
+  }
 
   function handleClientChange(id: string) {
     setValue('client_id', id)
-    const client = clients.find((c) => c.id === id)
-    if (client) setValue('amount', client.monthly_fee + lateFee)
+    suggestAmount(id, periodMonth)
+  }
+
+  function handlePeriodChange(month: string) {
+    setValue('period', month)
+    suggestAmount(clientId, month)
+  }
+
+  async function openVoucher() {
+    if (!payment?.voucher_path) return
+    setOpeningVoucher(true)
+    try {
+      const url = await getVoucherSignedUrl(payment.voucher_path)
+      window.open(url, '_blank')
+    } finally {
+      setOpeningVoucher(false)
+    }
   }
 
   async function onSubmit(values: PaymentFormValues) {
     setFormError(null)
+    const periodStr = `${values.period}-01`
     try {
-      const payment = await createPayment.mutateAsync({
-        client_id: values.client_id,
-        period: periodStr,
-        amount: values.amount,
-        payment_date: values.status === 'paid' ? values.payment_date || null : null,
-        method: values.method,
-        status: values.status,
-      })
+      const savedPayment = isEdit
+        ? await updatePayment.mutateAsync({
+            id: payment.id,
+            period: periodStr,
+            amount: values.amount,
+            payment_date: values.status === 'paid' ? values.payment_date || null : null,
+            method: values.method,
+            status: values.status,
+          })
+        : await createPayment.mutateAsync({
+            client_id: values.client_id,
+            period: periodStr,
+            amount: values.amount,
+            payment_date: values.status === 'paid' ? values.payment_date || null : null,
+            method: values.method,
+            status: values.status,
+          })
       if (voucherFile) {
-        await uploadVoucher.mutateAsync({ paymentId: payment.id, clientId: values.client_id, file: voucherFile })
+        await uploadVoucher.mutateAsync({
+          paymentId: savedPayment.id,
+          clientId: values.client_id,
+          file: voucherFile,
+        })
       }
       setOpen(false)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al registrar el pago'
+      const pgError = err as { code?: string; message?: string }
       setFormError(
-        message.includes('client_payments_client_period_unique')
-          ? 'Ya existe un pago registrado para ese cliente en este mes.'
-          : message
+        pgError.code === '23505'
+          ? 'Ya existe un pago registrado para ese cliente en ese periodo.'
+          : pgError.message ?? 'Error al registrar el pago'
       )
     }
   }
@@ -124,19 +188,25 @@ export function ClientPaymentFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-1.5" size="sm">
-          <Plus className="size-4" />
-          Registrar pago
-        </Button>
+        {isEdit ? (
+          <Button variant="outline" size="sm">
+            Editar
+          </Button>
+        ) : (
+          <Button className="gap-1.5" size="sm">
+            <Plus className="size-4" />
+            Registrar pago
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar pago de cliente</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar pago de cliente' : 'Registrar pago de cliente'}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-1.5">
             <Label>Cliente</Label>
-            <Select value={clientId} onValueChange={handleClientChange}>
+            <Select value={clientId} onValueChange={handleClientChange} disabled={isEdit}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccioná un cliente" />
               </SelectTrigger>
@@ -152,6 +222,16 @@ export function ClientPaymentFormDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
+              <Label htmlFor="payment_period">Periodo</Label>
+              <Input
+                id="payment_period"
+                type="month"
+                {...register('period')}
+                onChange={(e) => handlePeriodChange(e.target.value)}
+              />
+              {errors.period && <p className="text-xs text-destructive">{errors.period.message}</p>}
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="amount">Monto</Label>
               <Input id="amount" type="number" step="0.01" min="0" {...register('amount')} />
               {errors.amount ? (
@@ -162,6 +242,8 @@ export function ClientPaymentFormDialog({
                 )
               )}
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Estado</Label>
               <Controller
@@ -181,35 +263,43 @@ export function ClientPaymentFormDialog({
                 )}
               />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="payment_date">Fecha de pago</Label>
               <Input id="payment_date" type="date" {...register('payment_date')} />
             </div>
-            <div className="space-y-1.5">
-              <Label>Método</Label>
-              <Controller
-                control={control}
-                name="method"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Efectivo</SelectItem>
-                      <SelectItem value="transfer">Transferencia</SelectItem>
-                      <SelectItem value="card">Tarjeta</SelectItem>
-                      <SelectItem value="other">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="voucher">Voucher (opcional)</Label>
+            <Label>Método</Label>
+            <Controller
+              control={control}
+              name="method"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Efectivo</SelectItem>
+                    <SelectItem value="transfer">Transferencia</SelectItem>
+                    <SelectItem value="card">Tarjeta</SelectItem>
+                    <SelectItem value="other">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="voucher">{isEdit ? 'Reemplazar voucher' : 'Voucher (opcional)'}</Label>
+            {isEdit && payment?.voucher_path && (
+              <button
+                type="button"
+                className="block text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                disabled={openingVoucher}
+                onClick={openVoucher}
+              >
+                Ver voucher actual
+              </button>
+            )}
             <Input
               id="voucher"
               type="file"

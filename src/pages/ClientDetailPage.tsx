@@ -121,6 +121,7 @@ export function ClientDetailPage() {
                   <TableHead>Fecha de pago</TableHead>
                   <TableHead>Método</TableHead>
                   <TableHead>Voucher</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -166,6 +167,13 @@ export function ClientDetailPage() {
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ClientPaymentFormDialog
+                          clients={[client]}
+                          period={new Date(payment.period + 'T00:00:00')}
+                          payment={payment}
+                        />
                       </TableCell>
                     </TableRow>
                   )
