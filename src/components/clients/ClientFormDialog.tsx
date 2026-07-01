@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -13,66 +13,70 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useCreateClient, useUpdateClient, type Client } from '@/hooks/useClients'
-import { Plus } from 'lucide-react'
+import { useCreateClient, useUpdateClient, type ClientWithVehicles } from '@/hooks/useClients'
+import { useReplaceClientVehicles } from '@/hooks/useVehicles'
+import { Plus, X } from 'lucide-react'
 
 const clientSchema = z.object({
   full_name: z.string().min(1, 'Requerido'),
   phone: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  vehicle_plate: z.string().min(1, 'Requerido'),
-  vehicle_description: z.string().optional(),
-  spot_number: z.string().min(1, 'Requerido'),
   monthly_fee: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
+  vehicles: z
+    .array(
+      z.object({
+        plate: z.string().min(1, 'Requerido'),
+        description: z.string().optional(),
+      })
+    )
+    .min(1, 'Agregá al menos un vehículo'),
 })
 
 type ClientFormInput = z.input<typeof clientSchema>
 type ClientFormValues = z.output<typeof clientSchema>
 
-export function ClientFormDialog({ client }: { client?: Client }) {
+function defaultFormValues(client?: ClientWithVehicles): ClientFormInput {
+  return {
+    full_name: client?.full_name ?? '',
+    phone: client?.phone ?? '',
+    email: client?.email ?? '',
+    monthly_fee: client?.monthly_fee ?? 0,
+    vehicles: client?.vehicles?.length
+      ? client.vehicles.map((v) => ({ plate: v.plate, description: v.description ?? '' }))
+      : [{ plate: '', description: '' }],
+  }
+}
+
+export function ClientFormDialog({ client }: { client?: ClientWithVehicles }) {
   const [open, setOpen] = useState(false)
   const createClient = useCreateClient()
   const updateClient = useUpdateClient()
+  const replaceVehicles = useReplaceClientVehicles()
   const isEdit = !!client
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormInput, unknown, ClientFormValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: {
-      full_name: client?.full_name ?? '',
-      phone: client?.phone ?? '',
-      email: client?.email ?? '',
-      vehicle_plate: client?.vehicle_plate ?? '',
-      vehicle_description: client?.vehicle_description ?? '',
-      spot_number: client?.spot_number ?? '',
-      monthly_fee: client?.monthly_fee ?? 0,
-    },
+    defaultValues: defaultFormValues(client),
   })
 
+  const { fields, append, remove } = useFieldArray({ control, name: 'vehicles' })
+
   useEffect(() => {
-    if (open) {
-      reset({
-        full_name: client?.full_name ?? '',
-        phone: client?.phone ?? '',
-        email: client?.email ?? '',
-        vehicle_plate: client?.vehicle_plate ?? '',
-        vehicle_description: client?.vehicle_description ?? '',
-        spot_number: client?.spot_number ?? '',
-        monthly_fee: client?.monthly_fee ?? 0,
-      })
-    }
+    if (open) reset(defaultFormValues(client))
   }, [open, client, reset])
 
   async function onSubmit(values: ClientFormValues) {
-    if (isEdit) {
-      await updateClient.mutateAsync({ id: client.id, ...values })
-    } else {
-      await createClient.mutateAsync(values)
-    }
+    const { vehicles, ...clientFields } = values
+    const clientId = isEdit
+      ? (await updateClient.mutateAsync({ id: client.id, ...clientFields })).id
+      : (await createClient.mutateAsync(clientFields)).id
+    await replaceVehicles.mutateAsync({ clientId, vehicles })
     setOpen(false)
   }
 
@@ -111,22 +115,44 @@ export function ClientFormDialog({ client }: { client?: Client }) {
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="vehicle_plate">Patente</Label>
-              <Input id="vehicle_plate" {...register('vehicle_plate')} />
-              {errors.vehicle_plate && <p className="text-xs text-destructive">{errors.vehicle_plate.message}</p>}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Vehículos</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => append({ plate: '', description: '' })}
+              >
+                <Plus className="size-3.5" />
+                Agregar vehículo
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="spot_number">N° de cochera</Label>
-              <Input id="spot_number" {...register('spot_number')} />
-              {errors.spot_number && <p className="text-xs text-destructive">{errors.spot_number.message}</p>}
-            </div>
+            {errors.vehicles?.root && <p className="text-xs text-destructive">{errors.vehicles.root.message}</p>}
+            {fields.map((field, index) => (
+              <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] items-start gap-2">
+                <div>
+                  <Input placeholder="Patente" {...register(`vehicles.${index}.plate`)} />
+                  {errors.vehicles?.[index]?.plate && (
+                    <p className="text-xs text-destructive">{errors.vehicles[index]?.plate?.message}</p>
+                  )}
+                </div>
+                <Input placeholder="Ej. Toyota Corolla gris" {...register(`vehicles.${index}.description`)} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={fields.length === 1}
+                  onClick={() => remove(index)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ))}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="vehicle_description">Descripción del vehículo</Label>
-            <Input id="vehicle_description" placeholder="Ej. Toyota Corolla gris" {...register('vehicle_description')} />
-          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="monthly_fee">Cuota mensual</Label>
             <Input id="monthly_fee" type="number" step="0.01" min="0" {...register('monthly_fee')} />

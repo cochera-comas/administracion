@@ -7,10 +7,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import type { Client } from '@/hooks/useClients'
+import type { ClientWithVehicles } from '@/hooks/useClients'
 import type { ClientPaymentWithClient } from '@/hooks/useClientPayments'
 import { useUpdateClientPaymentStatus } from '@/hooks/useClientPayments'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatPlates } from '@/lib/utils'
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   paid: { label: 'Pagado', variant: 'default' },
@@ -22,7 +22,7 @@ export function ClientPaymentTable({
   clients,
   payments,
 }: {
-  clients: Client[]
+  clients: ClientWithVehicles[]
   payments: ClientPaymentWithClient[]
 }) {
   const updateStatus = useUpdateClientPaymentStatus()
@@ -33,7 +33,7 @@ export function ClientPaymentTable({
       <TableHeader>
         <TableRow>
           <TableHead>Cliente</TableHead>
-          <TableHead>Cochera</TableHead>
+          <TableHead>Patente</TableHead>
           <TableHead>Monto</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead className="text-right">Acciones</TableHead>
@@ -46,7 +46,7 @@ export function ClientPaymentTable({
           return (
             <TableRow key={client.id}>
               <TableCell className="font-medium">{client.full_name}</TableCell>
-              <TableCell>{client.spot_number}</TableCell>
+              <TableCell>{formatPlates(client.vehicles)}</TableCell>
               <TableCell>{formatCurrency(payment?.amount ?? client.monthly_fee)}</TableCell>
               <TableCell>
                 {status ? (

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -9,10 +10,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog'
-import { useUpdateClient, type Client } from '@/hooks/useClients'
-import { formatCurrency } from '@/lib/utils'
+import { useUpdateClient, type ClientWithVehicles } from '@/hooks/useClients'
+import { formatCurrency, formatPlates } from '@/lib/utils'
 
-export function ClientTable({ clients }: { clients: Client[] }) {
+export function ClientTable({ clients }: { clients: ClientWithVehicles[] }) {
   const updateClient = useUpdateClient()
 
   if (clients.length === 0) {
@@ -25,7 +26,6 @@ export function ClientTable({ clients }: { clients: Client[] }) {
         <TableRow>
           <TableHead>Nombre</TableHead>
           <TableHead>Patente</TableHead>
-          <TableHead>Cochera</TableHead>
           <TableHead>Cuota mensual</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead className="text-right">Acciones</TableHead>
@@ -34,9 +34,12 @@ export function ClientTable({ clients }: { clients: Client[] }) {
       <TableBody>
         {clients.map((client) => (
           <TableRow key={client.id}>
-            <TableCell className="font-medium">{client.full_name}</TableCell>
-            <TableCell>{client.vehicle_plate}</TableCell>
-            <TableCell>{client.spot_number}</TableCell>
+            <TableCell className="font-medium">
+              <Link to={`/clients/${client.id}`} className="hover:underline">
+                {client.full_name}
+              </Link>
+            </TableCell>
+            <TableCell>{formatPlates(client.vehicles)}</TableCell>
             <TableCell>{formatCurrency(client.monthly_fee)}</TableCell>
             <TableCell>
               <Badge variant={client.is_active ? 'default' : 'secondary'}>

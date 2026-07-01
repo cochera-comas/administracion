@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard,
+  LayoutGrid,
   Users,
   Wallet,
   ShieldCheck,
@@ -13,6 +14,7 @@ import {
 
 const links = [
   { to: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
+  { to: '/cocheras', label: 'Cocheras', icon: LayoutGrid },
   { to: '/clients', label: 'Clientes', icon: Users },
   { to: '/client-payments', label: 'Pagos de clientes', icon: Wallet },
   { to: '/guards', label: 'Guardias', icon: ShieldCheck },

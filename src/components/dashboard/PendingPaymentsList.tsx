@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ClientPaymentWithClient } from '@/hooks/useClientPayments'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatPlates } from '@/lib/utils'
 
 export function PendingPaymentsList({ payments }: { payments: ClientPaymentWithClient[] }) {
   return (
@@ -17,7 +17,7 @@ export function PendingPaymentsList({ payments }: { payments: ClientPaymentWithC
             {payments.map((payment) => (
               <li key={payment.id} className="flex items-center justify-between py-2 text-sm">
                 <span>
-                  {payment.clients?.full_name} — {payment.clients?.spot_number}
+                  {payment.clients?.full_name} — {formatPlates(payment.clients?.vehicles)}
                 </span>
                 <span className="flex items-center gap-2">
                   {formatCurrency(payment.amount)}

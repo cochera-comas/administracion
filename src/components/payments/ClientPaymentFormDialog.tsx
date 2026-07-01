@@ -21,8 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateClientPayment } from '@/hooks/useClientPayments'
-import type { Client } from '@/hooks/useClients'
-import { toDateInputValue } from '@/lib/utils'
+import type { ClientWithVehicles } from '@/hooks/useClients'
+import { toDateInputValue, formatPlates } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 const paymentSchema = z.object({
@@ -41,7 +41,7 @@ export function ClientPaymentFormDialog({
   period,
   defaultClientId,
 }: {
-  clients: Client[]
+  clients: ClientWithVehicles[]
   period: Date
   defaultClientId?: string
 }) {
@@ -134,7 +134,7 @@ export function ClientPaymentFormDialog({
               <SelectContent>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.full_name} — {c.spot_number}
+                    {c.full_name} — {formatPlates(c.vehicles)}
                   </SelectItem>
                 ))}
               </SelectContent>

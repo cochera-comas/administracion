@@ -5,7 +5,9 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { CocherasPage } from '@/pages/CocherasPage'
 import { ClientsPage } from '@/pages/ClientsPage'
+import { ClientDetailPage } from '@/pages/ClientDetailPage'
 import { ClientPaymentsPage } from '@/pages/ClientPaymentsPage'
 import { GuardsPage } from '@/pages/GuardsPage'
 import { GuardPaymentsPage } from '@/pages/GuardPaymentsPage'
@@ -29,7 +31,9 @@ function App() {
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/cocheras" element={<CocherasPage />} />
                 <Route path="/clients" element={<ClientsPage />} />
+                <Route path="/clients/:id" element={<ClientDetailPage />} />
                 <Route path="/client-payments" element={<ClientPaymentsPage />} />
                 <Route path="/guards" element={<GuardsPage />} />
                 <Route path="/guard-payments" element={<GuardPaymentsPage />} />

@@ -22,3 +22,8 @@ export function monthStart(date: Date) {
 export function toDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10)
 }
+
+export function formatPlates(vehicles: { plate: string }[] | null | undefined) {
+  if (!vehicles || vehicles.length === 0) return 'Sin vehículo'
+  return vehicles.map((v) => v.plate).join(', ')
+}

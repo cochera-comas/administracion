@@ -10,9 +10,6 @@ export interface Database {
           full_name: string
           phone: string | null
           email: string | null
-          vehicle_plate: string
-          vehicle_description: string | null
-          spot_number: string
           monthly_fee: number
           is_active: boolean
           notes: string | null
@@ -24,9 +21,6 @@ export interface Database {
           full_name: string
           phone?: string | null
           email?: string | null
-          vehicle_plate: string
-          vehicle_description?: string | null
-          spot_number: string
           monthly_fee: number
           is_active?: boolean
           notes?: string | null
@@ -122,6 +116,66 @@ export interface Database {
             columns: ['guard_id']
             isOneToOne: false
             referencedRelation: 'guards'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      parking_spots: {
+        Row: {
+          id: string
+          gate: string
+          row_label: string
+          row_order: number
+          position: number
+          spot_label: string
+          client_id: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          gate: string
+          row_label: string
+          row_order: number
+          position: number
+          spot_label: string
+          client_id?: string | null
+          notes?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['parking_spots']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: 'parking_spots_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          id: string
+          client_id: string
+          plate: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          plate: string
+          description?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['vehicles']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: 'vehicles_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
             referencedColumns: ['id']
           },
         ]

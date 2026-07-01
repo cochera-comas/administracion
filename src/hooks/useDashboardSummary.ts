@@ -20,7 +20,7 @@ export function useDashboardSummary(referenceDate: Date) {
           .lte('period_start', monthRangeEnd),
         supabase
           .from('client_payments')
-          .select('*, clients(full_name, spot_number)')
+          .select('*, clients(full_name, vehicles(plate))')
           .eq('period', period)
           .in('status', ['pending', 'late'])
           .order('status', { ascending: false }),
