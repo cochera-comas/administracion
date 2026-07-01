@@ -28,6 +28,18 @@ export function formatPlates(vehicles: { plate: string }[] | null | undefined) {
   return vehicles.map((v) => v.plate).join(', ')
 }
 
+export function formatSpotLabels(spots: { spot_label: string }[] | null | undefined) {
+  if (!spots || spots.length === 0) return 'Sin asignar'
+  return spots.map((s) => s.spot_label).join(', ')
+}
+
+// Menor spot_label numérico entre las cocheras del cliente, para ordenar de
+// menor a mayor. Los clientes sin cochera van al final.
+export function minSpotNumber(spots: { spot_label: string }[] | null | undefined): number {
+  if (!spots || spots.length === 0) return Infinity
+  return Math.min(...spots.map((s) => parseInt(s.spot_label, 10)).filter((n) => !Number.isNaN(n)))
+}
+
 export const PAYMENT_DUE_DAY = 5
 export const LATE_FEE_PER_DAY = 1
 export const OWNER_DEFAULT_FEE = 125

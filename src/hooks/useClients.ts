@@ -7,13 +7,19 @@ export type Client = Database['public']['Tables']['clients']['Row']
 export type ClientInsert = Database['public']['Tables']['clients']['Insert']
 export type ClientUpdate = Database['public']['Tables']['clients']['Update']
 
-export type ClientWithVehicles = Client & { vehicles: Vehicle[] }
+export type ClientWithVehicles = Client & {
+  vehicles: Vehicle[]
+  parking_spots: { spot_label: string; gate: string; row_label: string }[]
+}
 
 export function useClients(includeInactive = false) {
   return useQuery({
     queryKey: ['clients', { includeInactive }],
     queryFn: async () => {
-      let query = supabase.from('clients').select('*, vehicles(*)').order('full_name')
+      let query = supabase
+        .from('clients')
+        .select('*, vehicles(*), parking_spots(spot_label, gate, row_label)')
+        .order('full_name')
       if (!includeInactive) query = query.eq('is_active', true)
       const { data, error } = await query
       if (error) throw error
@@ -26,7 +32,11 @@ export function useClient(id: string | undefined) {
   return useQuery({
     queryKey: ['clients', 'detail', id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('clients').select('*, vehicles(*)').eq('id', id!).single()
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*, vehicles(*), parking_spots(spot_label, gate, row_label)')
+        .eq('id', id!)
+        .single()
       if (error) throw error
       return data as ClientWithVehicles
     },

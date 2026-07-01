@@ -1,4 +1,6 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -11,10 +13,23 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog'
 import { useUpdateClient, type ClientWithVehicles } from '@/hooks/useClients'
-import { formatCurrency, formatPlates } from '@/lib/utils'
+import { formatCurrency, formatPlates, formatSpotLabels, minSpotNumber } from '@/lib/utils'
 
 export function ClientTable({ clients }: { clients: ClientWithVehicles[] }) {
   const updateClient = useUpdateClient()
+  const [spotSort, setSpotSort] = useState<'asc' | 'desc' | null>(null)
+
+  const sortedClients = useMemo(() => {
+    if (!spotSort) return clients
+    return [...clients].sort((a, b) => {
+      const diff = minSpotNumber(a.parking_spots) - minSpotNumber(b.parking_spots)
+      return spotSort === 'asc' ? diff : -diff
+    })
+  }, [clients, spotSort])
+
+  function toggleSpotSort() {
+    setSpotSort((current) => (current === 'asc' ? 'desc' : 'asc'))
+  }
 
   if (clients.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">No hay clientes para mostrar.</p>
@@ -27,13 +42,21 @@ export function ClientTable({ clients }: { clients: ClientWithVehicles[] }) {
           <TableHead>Nombre</TableHead>
           <TableHead>Tipo</TableHead>
           <TableHead>Patente</TableHead>
+          <TableHead>
+            <button type="button" onClick={toggleSpotSort} className="flex items-center gap-1 hover:text-foreground">
+              Cochera
+              {spotSort === 'asc' && <ArrowUp className="size-3.5" />}
+              {spotSort === 'desc' && <ArrowDown className="size-3.5" />}
+              {!spotSort && <ArrowUpDown className="size-3.5" />}
+            </button>
+          </TableHead>
           <TableHead>Cuota mensual</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead className="text-right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {clients.map((client) => (
+        {sortedClients.map((client) => (
           <TableRow key={client.id}>
             <TableCell className="font-medium">
               <Link to={`/clients/${client.id}`} className="hover:underline">
@@ -44,6 +67,7 @@ export function ClientTable({ clients }: { clients: ClientWithVehicles[] }) {
               <Badge variant="outline">{client.client_type === 'owner' ? 'Propietario' : 'Inquilino'}</Badge>
             </TableCell>
             <TableCell>{formatPlates(client.vehicles)}</TableCell>
+            <TableCell>{formatSpotLabels(client.parking_spots)}</TableCell>
             <TableCell>{formatCurrency(client.monthly_fee)}</TableCell>
             <TableCell>
               <Badge variant={client.is_active ? 'default' : 'secondary'}>
