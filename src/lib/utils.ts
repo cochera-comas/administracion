@@ -41,3 +41,16 @@ export function computeLateFee(period: string, referenceDate: Date): number {
   const diffDays = Math.floor((referenceDate.getTime() - dueDate.getTime()) / 86_400_000)
   return diffDays > 0 ? diffDays * LATE_FEE_PER_DAY : 0
 }
+
+export type SpotPaymentColor = 'paid' | 'grace' | 'overdue'
+
+// Estado visual de la cochera para el mes actual: verde si ya pagó, amarillo
+// si todavía está dentro del plazo (hasta el PAYMENT_DUE_DAY inclusive), rojo
+// si ya venció el plazo y sigue sin pagar.
+export function getSpotPaymentColor(
+  paymentStatus: 'paid' | 'pending' | 'late' | undefined,
+  referenceDate: Date = new Date()
+): SpotPaymentColor {
+  if (paymentStatus === 'paid') return 'paid'
+  return referenceDate.getDate() > PAYMENT_DUE_DAY ? 'overdue' : 'grace'
+}

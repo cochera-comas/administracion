@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useParkingSpots, type ParkingSpotWithClient } from '@/hooks/useParkingSpots'
 import { useClients } from '@/hooks/useClients'
+import { useClientPayments } from '@/hooks/useClientPayments'
 import { SpotCell } from '@/components/spots/SpotCell'
 
 function groupByGateAndRow(spots: ParkingSpotWithClient[]) {
@@ -17,6 +18,7 @@ function groupByGateAndRow(spots: ParkingSpotWithClient[]) {
 export function ParkingMap() {
   const { data: spots, isLoading, isError } = useParkingSpots()
   const { data: clients } = useClients(false)
+  const { data: currentPayments } = useClientPayments(new Date())
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando...</p>
   if (isError) return <p className="text-sm text-destructive">Error al cargar las cocheras.</p>
@@ -26,6 +28,7 @@ export function ParkingMap() {
 
   const assignedClientIds = new Set(spots.filter((s) => s.client_id).map((s) => s.client_id))
   const unassignedClients = (clients ?? []).filter((c) => c.is_active && !assignedClientIds.has(c.id))
+  const paymentByClientId = new Map((currentPayments ?? []).map((p) => [p.client_id, p]))
 
   const gates = groupByGateAndRow(spots)
 
@@ -42,7 +45,12 @@ export function ParkingMap() {
                 <p className="text-xs font-medium text-muted-foreground">{rowLabel}</p>
                 <div className="flex flex-wrap gap-2">
                   {rowSpots.map((spot) => (
-                    <SpotCell key={spot.id} spot={spot} unassignedClients={unassignedClients} />
+                    <SpotCell
+                      key={spot.id}
+                      spot={spot}
+                      unassignedClients={unassignedClients}
+                      paymentStatus={spot.client_id ? paymentByClientId.get(spot.client_id)?.status : undefined}
+                    />
                   ))}
                 </div>
               </div>

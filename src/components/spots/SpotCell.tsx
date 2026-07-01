@@ -19,14 +19,22 @@ import {
 } from '@/components/ui/select'
 import { useAssignSpot, type ParkingSpotWithClient } from '@/hooks/useParkingSpots'
 import type { ClientWithVehicles } from '@/hooks/useClients'
-import { formatPlates } from '@/lib/utils'
+import { formatPlates, getSpotPaymentColor } from '@/lib/utils'
+
+const paymentColorClasses: Record<string, string> = {
+  paid: 'border-green-700/30 bg-green-600 text-white hover:bg-green-600/90',
+  grace: 'border-yellow-600/30 bg-yellow-500 text-black hover:bg-yellow-500/90',
+  overdue: 'border-red-700/30 bg-red-600 text-white hover:bg-red-600/90',
+}
 
 export function SpotCell({
   spot,
   unassignedClients,
+  paymentStatus,
 }: {
   spot: ParkingSpotWithClient
   unassignedClients: ClientWithVehicles[]
+  paymentStatus?: 'paid' | 'pending' | 'late'
 }) {
   const navigate = useNavigate()
   const assignSpot = useAssignSpot()
@@ -44,7 +52,7 @@ export function SpotCell({
         className={cn(
           'group relative flex h-16 w-24 flex-col justify-center rounded-md border px-2 py-1 text-left text-xs cursor-pointer transition-colors',
           client.is_active
-            ? 'border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90'
+            ? paymentColorClasses[getSpotPaymentColor(paymentStatus)]
             : 'border-border bg-muted text-muted-foreground'
         )}
       >
