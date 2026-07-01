@@ -1,5 +1,6 @@
 export type PaymentStatus = 'paid' | 'pending' | 'late'
 export type PaymentMethod = 'cash' | 'transfer' | 'card' | 'other'
+export type ClientType = 'owner' | 'tenant'
 
 export interface Database {
   public: {
@@ -12,6 +13,7 @@ export interface Database {
           email: string | null
           monthly_fee: number
           is_active: boolean
+          client_type: ClientType
           notes: string | null
           created_at: string
           updated_at: string
@@ -23,6 +25,7 @@ export interface Database {
           email?: string | null
           monthly_fee: number
           is_active?: boolean
+          client_type?: ClientType
           notes?: string | null
         }
         Update: Partial<Database['public']['Tables']['clients']['Insert']>
@@ -60,6 +63,8 @@ export interface Database {
           method: PaymentMethod | null
           status: PaymentStatus
           notes: string | null
+          voucher_path: string | null
+          voucher_verified: boolean
           created_at: string
           updated_at: string
         }
@@ -72,6 +77,8 @@ export interface Database {
           method?: PaymentMethod | null
           status?: PaymentStatus
           notes?: string | null
+          voucher_path?: string | null
+          voucher_verified?: boolean
         }
         Update: Partial<Database['public']['Tables']['client_payments']['Insert']>
         Relationships: [
@@ -180,6 +187,40 @@ export interface Database {
           },
         ]
       }
+      hourly_rentals: {
+        Row: {
+          id: string
+          spot_id: string
+          renter_name: string
+          vehicle_plate: string | null
+          rental_date: string
+          hours: number
+          amount: number
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          spot_id: string
+          renter_name: string
+          vehicle_plate?: string | null
+          rental_date?: string
+          hours: number
+          amount: number
+          notes?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['hourly_rentals']['Insert']>
+        Relationships: [
+          {
+            foreignKeyName: 'hourly_rentals_spot_id_fkey'
+            columns: ['spot_id']
+            isOneToOne: false
+            referencedRelation: 'parking_spots'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       v_monthly_summary: {
@@ -198,6 +239,7 @@ export interface Database {
     Enums: {
       payment_status: PaymentStatus
       payment_method: PaymentMethod
+      client_type: ClientType
     }
     CompositeTypes: Record<string, never>
   }

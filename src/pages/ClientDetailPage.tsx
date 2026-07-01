@@ -12,12 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useState } from 'react'
 import { useClient } from '@/hooks/useClients'
-import { useClientPaymentHistory } from '@/hooks/useClientPayments'
+import {
+  useClientPaymentHistory,
+  useToggleVoucherVerified,
+  getVoucherSignedUrl,
+} from '@/hooks/useClientPayments'
 import { useClientSpots } from '@/hooks/useParkingSpots'
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog'
 import { ClientPaymentFormDialog } from '@/components/payments/ClientPaymentFormDialog'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, computeLateFee } from '@/lib/utils'
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   paid: { label: 'Pagado', variant: 'default' },
@@ -30,6 +35,18 @@ export function ClientDetailPage() {
   const { data: client, isLoading: loadingClient } = useClient(id)
   const { data: spots } = useClientSpots(id)
   const { data: payments, isLoading: loadingPayments } = useClientPaymentHistory(id)
+  const toggleVerified = useToggleVoucherVerified()
+  const [openingVoucher, setOpeningVoucher] = useState<string | null>(null)
+
+  async function openVoucher(path: string) {
+    setOpeningVoucher(path)
+    try {
+      const url = await getVoucherSignedUrl(path)
+      window.open(url, '_blank')
+    } finally {
+      setOpeningVoucher(null)
+    }
+  }
 
   if (loadingClient) return <p className="text-sm text-muted-foreground">Cargando...</p>
   if (!client) return <p className="text-sm text-destructive">Cliente no encontrado.</p>
@@ -54,9 +71,12 @@ export function ClientDetailPage() {
               ))}
             </ul>
           </div>
-          <Badge variant={client.is_active ? 'default' : 'secondary'}>
-            {client.is_active ? 'Activo' : 'Inactivo'}
-          </Badge>
+          <div className="flex gap-2">
+            <Badge variant="outline">{client.client_type === 'owner' ? 'Propietario' : 'Inquilino'}</Badge>
+            <Badge variant={client.is_active ? 'default' : 'secondary'}>
+              {client.is_active ? 'Activo' : 'Inactivo'}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-6">
           <div>
@@ -100,22 +120,53 @@ export function ClientDetailPage() {
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha de pago</TableHead>
                   <TableHead>Método</TableHead>
+                  <TableHead>Voucher</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payments.map((payment) => {
                   const status = statusLabels[payment.status]
+                  const lateFee = payment.status !== 'paid' ? computeLateFee(payment.period, new Date()) : 0
                   return (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium capitalize">
                         {format(new Date(payment.period + 'T00:00:00'), 'MMMM yyyy', { locale: es })}
                       </TableCell>
-                      <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell>
+                        {formatCurrency(payment.amount)}
+                        {lateFee > 0 && (
+                          <p className="text-xs text-muted-foreground">+S/ {lateFee} mora estimada a hoy</p>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
                       <TableCell>{payment.payment_date ?? '-'}</TableCell>
                       <TableCell>{payment.method ?? '-'}</TableCell>
+                      <TableCell>
+                        {payment.voucher_path ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                              disabled={openingVoucher === payment.voucher_path}
+                              onClick={() => openVoucher(payment.voucher_path!)}
+                            >
+                              Ver
+                            </button>
+                            <button
+                              onClick={() =>
+                                toggleVerified.mutate({ id: payment.id, verified: !payment.voucher_verified })
+                              }
+                            >
+                              <Badge variant={payment.voucher_verified ? 'default' : 'outline'}>
+                                {payment.voucher_verified ? 'Verificado' : 'Sin verificar'}
+                              </Badge>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   )
                 })}

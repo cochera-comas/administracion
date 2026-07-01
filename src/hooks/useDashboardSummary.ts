@@ -11,7 +11,7 @@ export function useDashboardSummary(referenceDate: Date) {
   return useQuery({
     queryKey: ['dashboard_summary', period],
     queryFn: async () => {
-      const [summaryRes, guardExpensesRes, pendingRes] = await Promise.all([
+      const [summaryRes, guardExpensesRes, pendingRes, hourlyRentalsRes] = await Promise.all([
         supabase.from('v_monthly_summary').select('*').eq('period', period).maybeSingle(),
         supabase
           .from('guard_payments')
@@ -24,21 +24,29 @@ export function useDashboardSummary(referenceDate: Date) {
           .eq('period', period)
           .in('status', ['pending', 'late'])
           .order('status', { ascending: false }),
+        supabase
+          .from('hourly_rentals')
+          .select('amount')
+          .gte('rental_date', monthRangeStart)
+          .lte('rental_date', monthRangeEnd),
       ])
 
       if (summaryRes.error) throw summaryRes.error
       if (guardExpensesRes.error) throw guardExpensesRes.error
       if (pendingRes.error) throw pendingRes.error
+      if (hourlyRentalsRes.error) throw hourlyRentalsRes.error
 
       const totalIncomePaid = summaryRes.data?.total_income_paid ?? 0
       const totalIncomePending = summaryRes.data?.total_income_pending ?? 0
       const totalExpenses = guardExpensesRes.data.reduce((sum, row) => sum + Number(row.amount), 0)
+      const totalHourlyIncome = hourlyRentalsRes.data.reduce((sum, row) => sum + Number(row.amount), 0)
 
       return {
         totalIncomePaid,
         totalIncomePending,
         totalExpenses,
-        balance: totalIncomePaid - totalExpenses,
+        totalHourlyIncome,
+        balance: totalIncomePaid + totalHourlyIncome - totalExpenses,
         pendingCount: summaryRes.data?.pending_count ?? 0,
         lateCount: summaryRes.data?.late_count ?? 0,
         pendingPayments: pendingRes.data as ClientPaymentWithClient[],

@@ -57,6 +57,62 @@ export function useCreateClientPayment() {
   })
 }
 
+export function useUploadVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      paymentId,
+      clientId,
+      file,
+    }: {
+      paymentId: string
+      clientId: string
+      file: File
+    }) => {
+      const path = `${clientId}/${crypto.randomUUID()}-${file.name}`
+      const { error: uploadError } = await supabase.storage.from('vouchers').upload(path, file)
+      if (uploadError) throw uploadError
+
+      const { data, error } = await supabase
+        .from('client_payments')
+        .update({ voucher_path: path })
+        .eq('id', paymentId)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client_payments'] })
+    },
+  })
+}
+
+export async function getVoucherSignedUrl(path: string) {
+  const { data, error } = await supabase.storage.from('vouchers').createSignedUrl(path, 3600)
+  if (error) throw error
+  return data.signedUrl
+}
+
+export function useToggleVoucherVerified() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, verified }: { id: string; verified: boolean }) => {
+      const { data, error } = await supabase
+        .from('client_payments')
+        .update({ voucher_verified: verified })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client_payments'] })
+    },
+  })
+}
+
 export function useUpdateClientPaymentStatus() {
   const queryClient = useQueryClient()
   return useMutation({

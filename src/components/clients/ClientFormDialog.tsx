@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -13,14 +13,23 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCreateClient, useUpdateClient, type ClientWithVehicles } from '@/hooks/useClients'
 import { useReplaceClientVehicles } from '@/hooks/useVehicles'
+import { OWNER_DEFAULT_FEE, TENANT_DEFAULT_FEE } from '@/lib/utils'
 import { Plus, X } from 'lucide-react'
 
 const clientSchema = z.object({
   full_name: z.string().min(1, 'Requerido'),
   phone: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
+  client_type: z.enum(['owner', 'tenant']),
   monthly_fee: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
   vehicles: z
     .array(
@@ -40,7 +49,8 @@ function defaultFormValues(client?: ClientWithVehicles): ClientFormInput {
     full_name: client?.full_name ?? '',
     phone: client?.phone ?? '',
     email: client?.email ?? '',
-    monthly_fee: client?.monthly_fee ?? 0,
+    client_type: client?.client_type ?? 'owner',
+    monthly_fee: client?.monthly_fee ?? OWNER_DEFAULT_FEE,
     vehicles: client?.vehicles?.length
       ? client.vehicles.map((v) => ({ plate: v.plate, description: v.description ?? '' }))
       : [{ plate: '', description: '' }],
@@ -59,13 +69,21 @@ export function ClientFormDialog({ client }: { client?: ClientWithVehicles }) {
     handleSubmit,
     reset,
     control,
-    formState: { errors, isSubmitting },
+    setValue,
+    formState: { errors, isSubmitting, dirtyFields },
   } = useForm<ClientFormInput, unknown, ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: defaultFormValues(client),
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'vehicles' })
+
+  function handleClientTypeChange(type: 'owner' | 'tenant', onChange: (v: string) => void) {
+    onChange(type)
+    if (!isEdit && !dirtyFields.monthly_fee) {
+      setValue('monthly_fee', type === 'owner' ? OWNER_DEFAULT_FEE : TENANT_DEFAULT_FEE)
+    }
+  }
 
   useEffect(() => {
     if (open) reset(defaultFormValues(client))
@@ -153,10 +171,33 @@ export function ClientFormDialog({ client }: { client?: ClientWithVehicles }) {
             ))}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="monthly_fee">Cuota mensual</Label>
-            <Input id="monthly_fee" type="number" step="0.01" min="0" {...register('monthly_fee')} />
-            {errors.monthly_fee && <p className="text-xs text-destructive">{errors.monthly_fee.message}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Tipo</Label>
+              <Controller
+                control={control}
+                name="client_type"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => handleClientTypeChange(v as 'owner' | 'tenant', field.onChange)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">Propietario</SelectItem>
+                      <SelectItem value="tenant">Inquilino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="monthly_fee">Cuota mensual</Label>
+              <Input id="monthly_fee" type="number" step="0.01" min="0" {...register('monthly_fee')} />
+              {errors.monthly_fee && <p className="text-xs text-destructive">{errors.monthly_fee.message}</p>}
+            </div>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

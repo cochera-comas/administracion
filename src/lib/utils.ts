@@ -27,3 +27,17 @@ export function formatPlates(vehicles: { plate: string }[] | null | undefined) {
   if (!vehicles || vehicles.length === 0) return 'Sin vehículo'
   return vehicles.map((v) => v.plate).join(', ')
 }
+
+export const PAYMENT_DUE_DAY = 5
+export const LATE_FEE_PER_DAY = 1
+export const OWNER_DEFAULT_FEE = 125
+export const TENANT_DEFAULT_FEE = 150
+
+// period: 'YYYY-MM-DD' (siempre día 1 del mes). Mora de LATE_FEE_PER_DAY por
+// cada día corrido después del PAYMENT_DUE_DAY de ese mes.
+export function computeLateFee(period: string, referenceDate: Date): number {
+  const [year, month] = period.split('-').map(Number)
+  const dueDate = new Date(year, month - 1, PAYMENT_DUE_DAY)
+  const diffDays = Math.floor((referenceDate.getTime() - dueDate.getTime()) / 86_400_000)
+  return diffDays > 0 ? diffDays * LATE_FEE_PER_DAY : 0
+}

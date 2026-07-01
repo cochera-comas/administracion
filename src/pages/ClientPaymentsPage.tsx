@@ -43,7 +43,7 @@ export function ClientPaymentsPage() {
 
       {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
       {isError && <p className="text-sm text-destructive">Error al cargar los pagos.</p>}
-      {clients && payments && <ClientPaymentTable clients={clients} payments={payments} />}
+      {clients && payments && <ClientPaymentTable clients={clients} payments={payments} period={period} />}
     </div>
   )
 }

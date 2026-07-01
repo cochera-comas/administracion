@@ -9,6 +9,7 @@ import {
   Wallet,
   ShieldCheck,
   Banknote,
+  Clock,
   LogOut,
 } from 'lucide-react'
 
@@ -19,6 +20,7 @@ const links = [
   { to: '/client-payments', label: 'Pagos de clientes', icon: Wallet },
   { to: '/guards', label: 'Guardias', icon: ShieldCheck },
   { to: '/guard-payments', label: 'Pagos a guardias', icon: Banknote },
+  { to: '/alquileres-hora', label: 'Alquileres x hora', icon: Clock },
 ]
 
 export function Sidebar() {

@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreateClientPayment } from '@/hooks/useClientPayments'
+import { useCreateClientPayment, useUploadVoucher } from '@/hooks/useClientPayments'
 import type { ClientWithVehicles } from '@/hooks/useClients'
-import { toDateInputValue, formatPlates } from '@/lib/utils'
+import { toDateInputValue, formatPlates, computeLateFee } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 const paymentSchema = z.object({
@@ -47,7 +47,11 @@ export function ClientPaymentFormDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [voucherFile, setVoucherFile] = useState<File | null>(null)
   const createPayment = useCreateClientPayment()
+  const uploadVoucher = useUploadVoucher()
+  const periodStr = toDateInputValue(new Date(period.getFullYear(), period.getMonth(), 1))
+  const lateFee = computeLateFee(periodStr, new Date())
 
   const {
     register,
@@ -73,34 +77,39 @@ export function ClientPaymentFormDialog({
   useEffect(() => {
     if (open) {
       const initialClientId = defaultClientId ?? ''
+      const initialClient = clients.find((c) => c.id === initialClientId)
       reset({
         client_id: initialClientId,
-        amount: clients.find((c) => c.id === initialClientId)?.monthly_fee ?? 0,
+        amount: initialClient ? initialClient.monthly_fee + lateFee : 0,
         payment_date: toDateInputValue(new Date()),
         method: 'cash',
         status: 'paid',
       })
+      setVoucherFile(null)
       setFormError(null)
     }
-  }, [open, defaultClientId, clients, reset])
+  }, [open, defaultClientId, clients, reset, lateFee])
 
   function handleClientChange(id: string) {
     setValue('client_id', id)
     const client = clients.find((c) => c.id === id)
-    if (client) setValue('amount', client.monthly_fee)
+    if (client) setValue('amount', client.monthly_fee + lateFee)
   }
 
   async function onSubmit(values: PaymentFormValues) {
     setFormError(null)
     try {
-      await createPayment.mutateAsync({
+      const payment = await createPayment.mutateAsync({
         client_id: values.client_id,
-        period: toDateInputValue(new Date(period.getFullYear(), period.getMonth(), 1)),
+        period: periodStr,
         amount: values.amount,
         payment_date: values.status === 'paid' ? values.payment_date || null : null,
         method: values.method,
         status: values.status,
       })
+      if (voucherFile) {
+        await uploadVoucher.mutateAsync({ paymentId: payment.id, clientId: values.client_id, file: voucherFile })
+      }
       setOpen(false)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al registrar el pago'
@@ -145,7 +154,13 @@ export function ClientPaymentFormDialog({
             <div className="space-y-1.5">
               <Label htmlFor="amount">Monto</Label>
               <Input id="amount" type="number" step="0.01" min="0" {...register('amount')} />
-              {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
+              {errors.amount ? (
+                <p className="text-xs text-destructive">{errors.amount.message}</p>
+              ) : (
+                lateFee > 0 && (
+                  <p className="text-xs text-muted-foreground">Incluye S/ {lateFee} de mora sugerida</p>
+                )
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Estado</Label>
@@ -192,6 +207,15 @@ export function ClientPaymentFormDialog({
                 )}
               />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="voucher">Voucher (opcional)</Label>
+            <Input
+              id="voucher"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setVoucherFile(e.target.files?.[0] ?? null)}
+            />
           </div>
           {formError && <p className="text-sm text-destructive">{formError}</p>}
           <DialogFooter>

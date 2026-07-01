@@ -25,6 +25,7 @@ export function ClientTable({ clients }: { clients: ClientWithVehicles[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>
+          <TableHead>Tipo</TableHead>
           <TableHead>Patente</TableHead>
           <TableHead>Cuota mensual</TableHead>
           <TableHead>Estado</TableHead>
@@ -38,6 +39,9 @@ export function ClientTable({ clients }: { clients: ClientWithVehicles[] }) {
               <Link to={`/clients/${client.id}`} className="hover:underline">
                 {client.full_name}
               </Link>
+            </TableCell>
+            <TableCell>
+              <Badge variant="outline">{client.client_type === 'owner' ? 'Propietario' : 'Inquilino'}</Badge>
             </TableCell>
             <TableCell>{formatPlates(client.vehicles)}</TableCell>
             <TableCell>{formatCurrency(client.monthly_fee)}</TableCell>

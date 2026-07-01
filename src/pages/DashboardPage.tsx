@@ -20,6 +20,7 @@ export function DashboardPage() {
           <SummaryCards
             totalIncomePaid={data.totalIncomePaid}
             totalIncomePending={data.totalIncomePending}
+            totalHourlyIncome={data.totalHourlyIncome}
             totalExpenses={data.totalExpenses}
             balance={data.balance}
           />
