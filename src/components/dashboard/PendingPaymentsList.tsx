@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ClientPaymentWithClient } from '@/hooks/useClientPayments'
-import { formatCurrency, formatPlates, computeLateFee } from '@/lib/utils'
+import { formatCurrency, formatPlates, computeLateFee, limaToday } from '@/lib/utils'
 
 export function PendingPaymentsList({ payments }: { payments: ClientPaymentWithClient[] }) {
   return (
@@ -15,7 +15,7 @@ export function PendingPaymentsList({ payments }: { payments: ClientPaymentWithC
         ) : (
           <ul className="divide-y">
             {payments.map((payment) => {
-              const lateFee = computeLateFee(payment.period, new Date())
+              const lateFee = computeLateFee(payment.period, limaToday())
               return (
                 <li key={payment.id} className="flex items-center justify-between py-2 text-sm">
                   <span>

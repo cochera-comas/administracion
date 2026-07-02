@@ -22,7 +22,7 @@ import {
 import { useClientSpots } from '@/hooks/useParkingSpots'
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog'
 import { ClientPaymentFormDialog } from '@/components/payments/ClientPaymentFormDialog'
-import { formatCurrency, computeLateFee } from '@/lib/utils'
+import { formatCurrency, computeLateFee, limaToday } from '@/lib/utils'
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   paid: { label: 'Pagado', variant: 'default' },
@@ -97,7 +97,7 @@ export function ClientDetailPage() {
           </div>
           <div className="ml-auto flex gap-2">
             <ClientFormDialog client={client} />
-            <ClientPaymentFormDialog clients={[client]} period={new Date()} defaultClientId={client.id} />
+            <ClientPaymentFormDialog clients={[client]} period={limaToday()} defaultClientId={client.id} />
           </div>
         </CardContent>
       </Card>
@@ -127,7 +127,7 @@ export function ClientDetailPage() {
               <TableBody>
                 {payments.map((payment) => {
                   const status = statusLabels[payment.status]
-                  const lateFee = payment.status !== 'paid' ? computeLateFee(payment.period, new Date()) : 0
+                  const lateFee = payment.status !== 'paid' ? computeLateFee(payment.period, limaToday()) : 0
                   return (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium capitalize">

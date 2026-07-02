@@ -28,7 +28,7 @@ import {
   type ClientPayment,
 } from '@/hooks/useClientPayments'
 import type { ClientWithVehicles } from '@/hooks/useClients'
-import { toDateInputValue, formatPlates, computeLateFee } from '@/lib/utils'
+import { toDateInputValue, formatPlates, computeLateFee, limaToday } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 const paymentSchema = z.object({
@@ -74,7 +74,7 @@ export function ClientPaymentFormDialog({
         client_id: payment.client_id,
         period: toPeriodMonthValue(payment.period),
         amount: payment.amount,
-        payment_date: payment.payment_date ?? toDateInputValue(new Date()),
+        payment_date: payment.payment_date ?? toDateInputValue(limaToday()),
         method: payment.method ?? 'cash',
         status: payment.status,
       }
@@ -82,12 +82,12 @@ export function ClientPaymentFormDialog({
     const initialClientId = defaultClientId ?? ''
     const initialClient = clients.find((c) => c.id === initialClientId)
     const periodMonth = toPeriodMonthValue(period)
-    const fee = initialClient ? initialClient.monthly_fee + computeLateFee(`${periodMonth}-01`, new Date()) : 0
+    const fee = initialClient ? initialClient.monthly_fee + computeLateFee(`${periodMonth}-01`, limaToday()) : 0
     return {
       client_id: initialClientId,
       period: periodMonth,
       amount: fee,
-      payment_date: toDateInputValue(new Date()),
+      payment_date: toDateInputValue(limaToday()),
       method: 'cash',
       status: 'paid',
     }
@@ -108,7 +108,7 @@ export function ClientPaymentFormDialog({
 
   const clientId = watch('client_id')
   const periodMonth = watch('period')
-  const lateFee = periodMonth ? computeLateFee(`${periodMonth}-01`, new Date()) : 0
+  const lateFee = periodMonth ? computeLateFee(`${periodMonth}-01`, limaToday()) : 0
 
   useEffect(() => {
     if (open) {
@@ -122,7 +122,7 @@ export function ClientPaymentFormDialog({
   function suggestAmount(id: string, month: string) {
     if (dirtyFields.amount) return
     const client = clients.find((c) => c.id === id)
-    if (client) setValue('amount', client.monthly_fee + computeLateFee(`${month}-01`, new Date()))
+    if (client) setValue('amount', client.monthly_fee + computeLateFee(`${month}-01`, limaToday()))
   }
 
   function handleClientChange(id: string) {

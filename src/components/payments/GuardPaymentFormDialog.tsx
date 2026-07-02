@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select'
 import { useCreateGuardPayment } from '@/hooks/useGuardPayments'
 import type { Guard } from '@/hooks/useGuards'
-import { toDateInputValue } from '@/lib/utils'
+import { toDateInputValue, limaToday } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 const paymentSchema = z
@@ -46,7 +46,7 @@ type PaymentFormValues = z.output<typeof paymentSchema>
 export function GuardPaymentFormDialog({ guards }: { guards: Guard[] }) {
   const [open, setOpen] = useState(false)
   const createPayment = useCreateGuardPayment()
-  const today = toDateInputValue(new Date())
+  const today = toDateInputValue(limaToday())
 
   const {
     register,

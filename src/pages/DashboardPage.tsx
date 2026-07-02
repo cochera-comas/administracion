@@ -4,10 +4,10 @@ import { SummaryCards } from '@/components/dashboard/SummaryCards'
 import { PendingPaymentsList } from '@/components/dashboard/PendingPaymentsList'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { monthStart, toDateInputValue } from '@/lib/utils'
+import { monthStart, toDateInputValue, limaToday } from '@/lib/utils'
 
 export function DashboardPage() {
-  const [referenceDate, setReferenceDate] = useState(() => monthStart(new Date()))
+  const [referenceDate, setReferenceDate] = useState(() => monthStart(limaToday()))
   const { data, isLoading, isError } = useDashboardSummary(referenceDate)
 
   function handleMonthChange(value: string) {

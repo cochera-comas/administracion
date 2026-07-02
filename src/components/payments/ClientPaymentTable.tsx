@@ -12,7 +12,7 @@ import type { ClientWithVehicles } from '@/hooks/useClients'
 import type { ClientPaymentWithClient } from '@/hooks/useClientPayments'
 import { useUpdateClientPaymentStatus, useToggleVoucherVerified, getVoucherSignedUrl } from '@/hooks/useClientPayments'
 import { ClientPaymentFormDialog } from '@/components/payments/ClientPaymentFormDialog'
-import { formatCurrency, formatPlates, computeLateFee, toDateInputValue } from '@/lib/utils'
+import { formatCurrency, formatPlates, computeLateFee, toDateInputValue, limaToday } from '@/lib/utils'
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   paid: { label: 'Pagado', variant: 'default' },
@@ -34,7 +34,7 @@ export function ClientPaymentTable({
   const [openingVoucher, setOpeningVoucher] = useState<string | null>(null)
   const paymentsByClient = new Map(payments.map((p) => [p.client_id, p]))
   const periodStr = toDateInputValue(new Date(period.getFullYear(), period.getMonth(), 1))
-  const lateFee = computeLateFee(periodStr, new Date())
+  const lateFee = computeLateFee(periodStr, limaToday())
 
   async function openVoucher(path: string) {
     setOpeningVoucher(path)
@@ -114,7 +114,7 @@ export function ClientPaymentTable({
                         updateStatus.mutate({
                           id: payment.id,
                           status: 'paid',
-                          payment_date: new Date().toISOString().slice(0, 10),
+                          payment_date: toDateInputValue(limaToday()),
                         })
                       }
                     >

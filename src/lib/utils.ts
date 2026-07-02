@@ -23,6 +23,25 @@ export function toDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10)
 }
 
+const BUSINESS_TIMEZONE = 'America/Lima'
+
+// "Hoy" según el calendario de Lima (UTC-5, sin horario de verano),
+// independiente de la zona horaria configurada en el dispositivo/navegador.
+// Devuelve un Date local (medianoche) con año/mes/día de Lima, para poder
+// seguir usando monthStart/getDate/etc. normalmente sobre el resultado.
+export function limaToday(): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const year = Number(parts.find((p) => p.type === 'year')!.value)
+  const month = Number(parts.find((p) => p.type === 'month')!.value)
+  const day = Number(parts.find((p) => p.type === 'day')!.value)
+  return new Date(year, month - 1, day)
+}
+
 export function formatPlates(vehicles: { plate: string }[] | null | undefined) {
   if (!vehicles || vehicles.length === 0) return 'Sin vehículo'
   return vehicles.map((v) => v.plate).join(', ')
@@ -61,7 +80,7 @@ export type SpotPaymentColor = 'paid' | 'grace' | 'overdue'
 // si ya venció el plazo y sigue sin pagar.
 export function getSpotPaymentColor(
   paymentStatus: 'paid' | 'pending' | 'late' | undefined,
-  referenceDate: Date = new Date()
+  referenceDate: Date = limaToday()
 ): SpotPaymentColor {
   if (paymentStatus === 'paid') return 'paid'
   return referenceDate.getDate() > PAYMENT_DUE_DAY ? 'overdue' : 'grace'

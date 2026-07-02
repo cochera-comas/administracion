@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select'
 import { useCreateHourlyRental } from '@/hooks/useHourlyRentals'
 import type { ParkingSpotWithClient } from '@/hooks/useParkingSpots'
-import { toDateInputValue } from '@/lib/utils'
+import { toDateInputValue, limaToday } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 const rentalSchema = z.object({
@@ -40,7 +40,7 @@ type RentalFormValues = z.output<typeof rentalSchema>
 export function HourlyRentalFormDialog({ spots }: { spots: ParkingSpotWithClient[] }) {
   const [open, setOpen] = useState(false)
   const createRental = useCreateHourlyRental()
-  const today = toDateInputValue(new Date())
+  const today = toDateInputValue(limaToday())
 
   const {
     register,

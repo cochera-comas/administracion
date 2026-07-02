@@ -3,6 +3,7 @@ import { useParkingSpots, type ParkingSpotWithClient } from '@/hooks/useParkingS
 import { useClients } from '@/hooks/useClients'
 import { useClientPayments } from '@/hooks/useClientPayments'
 import { SpotCell } from '@/components/spots/SpotCell'
+import { monthStart, limaToday } from '@/lib/utils'
 
 function groupByGateAndRow(spots: ParkingSpotWithClient[]) {
   const gates = new Map<string, Map<string, ParkingSpotWithClient[]>>()
@@ -18,7 +19,7 @@ function groupByGateAndRow(spots: ParkingSpotWithClient[]) {
 export function ParkingMap() {
   const { data: spots, isLoading, isError } = useParkingSpots()
   const { data: clients } = useClients(false)
-  const { data: currentPayments } = useClientPayments(new Date())
+  const { data: currentPayments } = useClientPayments(monthStart(limaToday()))
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando...</p>
   if (isError) return <p className="text-sm text-destructive">Error al cargar las cocheras.</p>

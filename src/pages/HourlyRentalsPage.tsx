@@ -5,10 +5,10 @@ import { HourlyRentalFormDialog } from '@/components/rentals/HourlyRentalFormDia
 import { HourlyRentalTable } from '@/components/rentals/HourlyRentalTable'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { monthStart, toDateInputValue } from '@/lib/utils'
+import { monthStart, toDateInputValue, limaToday } from '@/lib/utils'
 
 export function HourlyRentalsPage() {
-  const now = new Date()
+  const now = limaToday()
   const [rangeStart, setRangeStart] = useState(() => toDateInputValue(monthStart(now)))
   const [rangeEnd, setRangeEnd] = useState(() =>
     toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0))

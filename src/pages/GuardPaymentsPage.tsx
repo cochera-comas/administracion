@@ -5,10 +5,10 @@ import { GuardPaymentFormDialog } from '@/components/payments/GuardPaymentFormDi
 import { GuardPaymentTable } from '@/components/payments/GuardPaymentTable'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { monthStart, toDateInputValue } from '@/lib/utils'
+import { monthStart, toDateInputValue, limaToday } from '@/lib/utils'
 
 export function GuardPaymentsPage() {
-  const now = new Date()
+  const now = limaToday()
   const [rangeStart, setRangeStart] = useState(() => toDateInputValue(monthStart(now)))
   const [rangeEnd, setRangeEnd] = useState(() =>
     toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0))

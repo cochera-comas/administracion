@@ -5,10 +5,10 @@ import { ClientPaymentFormDialog } from '@/components/payments/ClientPaymentForm
 import { ClientPaymentTable } from '@/components/payments/ClientPaymentTable'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { monthStart, toDateInputValue } from '@/lib/utils'
+import { monthStart, toDateInputValue, limaToday } from '@/lib/utils'
 
 export function ClientPaymentsPage() {
-  const [period, setPeriod] = useState(() => monthStart(new Date()))
+  const [period, setPeriod] = useState(() => monthStart(limaToday()))
   const { data: clients, isLoading: loadingClients } = useClients(false)
   const { data: payments, isLoading: loadingPayments, isError } = useClientPayments(period)
 
