@@ -12,6 +12,7 @@ import { ClientPaymentsPage } from '@/pages/ClientPaymentsPage'
 import { GuardsPage } from '@/pages/GuardsPage'
 import { GuardPaymentsPage } from '@/pages/GuardPaymentsPage'
 import { HourlyRentalsPage } from '@/pages/HourlyRentalsPage'
+import { MovementsPage } from '@/pages/MovementsPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/guards" element={<GuardsPage />} />
                 <Route path="/guard-payments" element={<GuardPaymentsPage />} />
                 <Route path="/alquileres-hora" element={<HourlyRentalsPage />} />
+                <Route path="/movimientos" element={<MovementsPage />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
