@@ -11,7 +11,7 @@ export function useDashboardSummary(referenceDate: Date) {
   return useQuery({
     queryKey: ['dashboard_summary', period],
     queryFn: async () => {
-      const [summaryRes, guardExpensesRes, pendingRes, hourlyRentalsRes] = await Promise.all([
+      const [summaryRes, guardExpensesRes, pendingRes, hourlyRentalsRes, manualMovementsRes] = await Promise.all([
         supabase.from('v_monthly_summary').select('*').eq('period', period).maybeSingle(),
         supabase
           .from('guard_payments')
@@ -29,24 +29,38 @@ export function useDashboardSummary(referenceDate: Date) {
           .select('amount')
           .gte('rental_date', monthRangeStart)
           .lte('rental_date', monthRangeEnd),
+        supabase
+          .from('manual_movements')
+          .select('type, amount')
+          .gte('movement_date', monthRangeStart)
+          .lte('movement_date', monthRangeEnd),
       ])
 
       if (summaryRes.error) throw summaryRes.error
       if (guardExpensesRes.error) throw guardExpensesRes.error
       if (pendingRes.error) throw pendingRes.error
       if (hourlyRentalsRes.error) throw hourlyRentalsRes.error
+      if (manualMovementsRes.error) throw manualMovementsRes.error
 
       const totalIncomePaid = summaryRes.data?.total_income_paid ?? 0
       const totalIncomePending = summaryRes.data?.total_income_pending ?? 0
       const totalExpenses = guardExpensesRes.data.reduce((sum, row) => sum + Number(row.amount), 0)
       const totalHourlyIncome = hourlyRentalsRes.data.reduce((sum, row) => sum + Number(row.amount), 0)
+      const totalOtherIncome = manualMovementsRes.data
+        .filter((m) => m.type === 'income')
+        .reduce((sum, row) => sum + Number(row.amount), 0)
+      const totalOtherExpenses = manualMovementsRes.data
+        .filter((m) => m.type === 'expense')
+        .reduce((sum, row) => sum + Number(row.amount), 0)
 
       return {
         totalIncomePaid,
         totalIncomePending,
         totalExpenses,
         totalHourlyIncome,
-        balance: totalIncomePaid + totalHourlyIncome - totalExpenses,
+        totalOtherIncome,
+        totalOtherExpenses,
+        balance: totalIncomePaid + totalHourlyIncome + totalOtherIncome - totalExpenses - totalOtherExpenses,
         pendingCount: summaryRes.data?.pending_count ?? 0,
         lateCount: summaryRes.data?.late_count ?? 0,
         pendingPayments: pendingRes.data as ClientPaymentWithClient[],

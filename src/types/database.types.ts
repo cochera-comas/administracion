@@ -1,6 +1,7 @@
 export type PaymentStatus = 'paid' | 'pending' | 'late'
 export type PaymentMethod = 'cash' | 'transfer' | 'card' | 'other'
 export type ClientType = 'owner' | 'tenant'
+export type MovementType = 'income' | 'expense'
 
 export interface Database {
   public: {
@@ -221,6 +222,30 @@ export interface Database {
           },
         ]
       }
+      manual_movements: {
+        Row: {
+          id: string
+          type: MovementType
+          category: string
+          description: string | null
+          amount: number
+          movement_date: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          type: MovementType
+          category: string
+          description?: string | null
+          amount: number
+          movement_date?: string
+          notes?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['manual_movements']['Insert']>
+        Relationships: []
+      }
     }
     Views: {
       v_monthly_summary: {
@@ -240,6 +265,7 @@ export interface Database {
       payment_status: PaymentStatus
       payment_method: PaymentMethod
       client_type: ClientType
+      movement_type: MovementType
     }
     CompositeTypes: Record<string, never>
   }

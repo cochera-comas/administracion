@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMovements } from '@/hooks/useMovements'
 import { MovementsTable } from '@/components/movements/MovementsTable'
+import { ManualMovementFormDialog } from '@/components/movements/ManualMovementFormDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +37,7 @@ export function MovementsPage() {
             <Label htmlFor="rangeEnd">Hasta</Label>
             <Input id="rangeEnd" type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} />
           </div>
+          <ManualMovementFormDialog />
         </div>
       </div>
 

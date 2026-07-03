@@ -43,7 +43,9 @@ export function DashboardPage() {
             totalIncomePaid={data.totalIncomePaid}
             totalIncomePending={data.totalIncomePending}
             totalHourlyIncome={data.totalHourlyIncome}
+            totalOtherIncome={data.totalOtherIncome}
             totalExpenses={data.totalExpenses}
+            totalOtherExpenses={data.totalOtherExpenses}
             balance={data.balance}
           />
           <PendingPaymentsList payments={data.pendingPayments} />
