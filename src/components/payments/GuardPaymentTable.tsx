@@ -7,9 +7,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { GuardPaymentWithGuard } from '@/hooks/useGuardPayments'
+import type { Guard } from '@/hooks/useGuards'
+import { GuardPaymentFormDialog } from '@/components/payments/GuardPaymentFormDialog'
 import { formatCurrency } from '@/lib/utils'
 
-export function GuardPaymentTable({ payments }: { payments: GuardPaymentWithGuard[] }) {
+export function GuardPaymentTable({
+  payments,
+  guards,
+}: {
+  payments: GuardPaymentWithGuard[]
+  guards: Guard[]
+}) {
   if (payments.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">No hay pagos registrados en este rango.</p>
   }
@@ -23,6 +31,7 @@ export function GuardPaymentTable({ payments }: { payments: GuardPaymentWithGuar
           <TableHead>Rango</TableHead>
           <TableHead>Monto</TableHead>
           <TableHead>Fecha de pago</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -35,6 +44,9 @@ export function GuardPaymentTable({ payments }: { payments: GuardPaymentWithGuar
             </TableCell>
             <TableCell>{formatCurrency(payment.amount)}</TableCell>
             <TableCell>{payment.payment_date}</TableCell>
+            <TableCell className="text-right">
+              <GuardPaymentFormDialog guards={guards} payment={payment} />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

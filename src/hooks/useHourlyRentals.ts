@@ -39,3 +39,18 @@ export function useCreateHourlyRental() {
     },
   })
 }
+
+export function useUpdateHourlyRental() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...update }: Database['public']['Tables']['hourly_rentals']['Update'] & { id: string }) => {
+      const { data, error } = await supabase.from('hourly_rentals').update(update).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hourly_rentals'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] })
+    },
+  })
+}

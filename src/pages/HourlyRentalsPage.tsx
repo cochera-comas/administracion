@@ -44,7 +44,7 @@ export function HourlyRentalsPage() {
 
       {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
       {isError && <p className="text-sm text-destructive">Error al cargar los alquileres.</p>}
-      {rentals && <HourlyRentalTable rentals={rentals} />}
+      {rentals && spots && <HourlyRentalTable rentals={rentals} spots={spots} />}
     </div>
   )
 }

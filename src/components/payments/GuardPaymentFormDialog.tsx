@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreateGuardPayment } from '@/hooks/useGuardPayments'
+import { useCreateGuardPayment, useUpdateGuardPayment, type GuardPayment } from '@/hooks/useGuardPayments'
 import type { Guard } from '@/hooks/useGuards'
 import { toDateInputValue, limaToday } from '@/lib/utils'
 import { Plus } from 'lucide-react'
@@ -43,10 +43,35 @@ const paymentSchema = z
 type PaymentFormInput = z.input<typeof paymentSchema>
 type PaymentFormValues = z.output<typeof paymentSchema>
 
-export function GuardPaymentFormDialog({ guards }: { guards: Guard[] }) {
+export function GuardPaymentFormDialog({ guards, payment }: { guards: Guard[]; payment?: GuardPayment }) {
   const [open, setOpen] = useState(false)
   const createPayment = useCreateGuardPayment()
+  const updatePayment = useUpdateGuardPayment()
   const today = toDateInputValue(limaToday())
+  const isEdit = !!payment
+
+  function defaultFormValues(): PaymentFormInput {
+    if (payment) {
+      return {
+        guard_id: payment.guard_id,
+        period_label: payment.period_label,
+        period_start: payment.period_start,
+        period_end: payment.period_end,
+        amount: payment.amount,
+        payment_date: payment.payment_date,
+        method: payment.method ?? 'cash',
+      }
+    }
+    return {
+      guard_id: '',
+      period_label: '',
+      period_start: today,
+      period_end: today,
+      amount: 0,
+      payment_date: today,
+      method: 'cash',
+    }
+  }
 
   const {
     register,
@@ -56,42 +81,40 @@ export function GuardPaymentFormDialog({ guards }: { guards: Guard[] }) {
     formState: { errors, isSubmitting },
   } = useForm<PaymentFormInput, unknown, PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      guard_id: '',
-      period_label: '',
-      period_start: today,
-      period_end: today,
-      amount: 0,
-      payment_date: today,
-      method: 'cash',
-    },
+    defaultValues: defaultFormValues(),
   })
 
+  useEffect(() => {
+    if (open) reset(defaultFormValues())
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   async function onSubmit(values: PaymentFormValues) {
-    await createPayment.mutateAsync(values)
-    reset({
-      guard_id: '',
-      period_label: '',
-      period_start: today,
-      period_end: today,
-      amount: 0,
-      payment_date: today,
-      method: 'cash',
-    })
+    if (isEdit) {
+      await updatePayment.mutateAsync({ id: payment.id, ...values })
+    } else {
+      await createPayment.mutateAsync(values)
+    }
     setOpen(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-1.5" size="sm">
-          <Plus className="size-4" />
-          Registrar pago
-        </Button>
+        {isEdit ? (
+          <Button variant="outline" size="sm">
+            Editar
+          </Button>
+        ) : (
+          <Button className="gap-1.5" size="sm">
+            <Plus className="size-4" />
+            Registrar pago
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar pago a guardia</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar pago a guardia' : 'Registrar pago a guardia'}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-1.5">

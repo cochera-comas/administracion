@@ -7,9 +7,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { HourlyRentalWithSpot } from '@/hooks/useHourlyRentals'
+import type { ParkingSpotWithClient } from '@/hooks/useParkingSpots'
+import { HourlyRentalFormDialog } from '@/components/rentals/HourlyRentalFormDialog'
 import { formatCurrency } from '@/lib/utils'
 
-export function HourlyRentalTable({ rentals }: { rentals: HourlyRentalWithSpot[] }) {
+export function HourlyRentalTable({
+  rentals,
+  spots,
+}: {
+  rentals: HourlyRentalWithSpot[]
+  spots: ParkingSpotWithClient[]
+}) {
   if (rentals.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">No hay alquileres registrados en este rango.</p>
   }
@@ -24,6 +32,7 @@ export function HourlyRentalTable({ rentals }: { rentals: HourlyRentalWithSpot[]
           <TableHead>Fecha</TableHead>
           <TableHead>Horas</TableHead>
           <TableHead>Monto</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -39,6 +48,9 @@ export function HourlyRentalTable({ rentals }: { rentals: HourlyRentalWithSpot[]
             <TableCell>{rental.rental_date}</TableCell>
             <TableCell>{rental.hours}</TableCell>
             <TableCell>{formatCurrency(rental.amount)}</TableCell>
+            <TableCell className="text-right">
+              <HourlyRentalFormDialog spots={spots} rental={rental} />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

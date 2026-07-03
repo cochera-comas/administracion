@@ -39,3 +39,18 @@ export function useCreateGuardPayment() {
     },
   })
 }
+
+export function useUpdateGuardPayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...update }: Database['public']['Tables']['guard_payments']['Update'] & { id: string }) => {
+      const { data, error } = await supabase.from('guard_payments').update(update).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guard_payments'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] })
+    },
+  })
+}

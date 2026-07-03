@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreateHourlyRental } from '@/hooks/useHourlyRentals'
+import { useCreateHourlyRental, useUpdateHourlyRental, type HourlyRental } from '@/hooks/useHourlyRentals'
 import type { ParkingSpotWithClient } from '@/hooks/useParkingSpots'
 import { toDateInputValue, limaToday } from '@/lib/utils'
 import { Plus } from 'lucide-react'
@@ -37,10 +37,32 @@ const rentalSchema = z.object({
 type RentalFormInput = z.input<typeof rentalSchema>
 type RentalFormValues = z.output<typeof rentalSchema>
 
-export function HourlyRentalFormDialog({ spots }: { spots: ParkingSpotWithClient[] }) {
+export function HourlyRentalFormDialog({
+  spots,
+  rental,
+}: {
+  spots: ParkingSpotWithClient[]
+  rental?: HourlyRental
+}) {
   const [open, setOpen] = useState(false)
   const createRental = useCreateHourlyRental()
+  const updateRental = useUpdateHourlyRental()
   const today = toDateInputValue(limaToday())
+  const isEdit = !!rental
+
+  function defaultFormValues(): RentalFormInput {
+    if (rental) {
+      return {
+        spot_id: rental.spot_id,
+        renter_name: rental.renter_name,
+        vehicle_plate: rental.vehicle_plate ?? '',
+        rental_date: rental.rental_date,
+        hours: rental.hours,
+        amount: rental.amount,
+      }
+    }
+    return { spot_id: '', renter_name: '', vehicle_plate: '', rental_date: today, hours: 1, amount: 0 }
+  }
 
   const {
     register,
@@ -50,19 +72,20 @@ export function HourlyRentalFormDialog({ spots }: { spots: ParkingSpotWithClient
     formState: { errors, isSubmitting },
   } = useForm<RentalFormInput, unknown, RentalFormValues>({
     resolver: zodResolver(rentalSchema),
-    defaultValues: {
-      spot_id: '',
-      renter_name: '',
-      vehicle_plate: '',
-      rental_date: today,
-      hours: 1,
-      amount: 0,
-    },
+    defaultValues: defaultFormValues(),
   })
 
+  useEffect(() => {
+    if (open) reset(defaultFormValues())
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   async function onSubmit(values: RentalFormValues) {
-    await createRental.mutateAsync(values)
-    reset({ spot_id: '', renter_name: '', vehicle_plate: '', rental_date: today, hours: 1, amount: 0 })
+    if (isEdit) {
+      await updateRental.mutateAsync({ id: rental.id, ...values })
+    } else {
+      await createRental.mutateAsync(values)
+    }
     setOpen(false)
   }
 
@@ -72,14 +95,20 @@ export function HourlyRentalFormDialog({ spots }: { spots: ParkingSpotWithClient
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-1.5" size="sm">
-          <Plus className="size-4" />
-          Registrar alquiler
-        </Button>
+        {isEdit ? (
+          <Button variant="outline" size="sm">
+            Editar
+          </Button>
+        ) : (
+          <Button className="gap-1.5" size="sm">
+            <Plus className="size-4" />
+            Registrar alquiler
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar alquiler por hora</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar alquiler por hora' : 'Registrar alquiler por hora'}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-1.5">

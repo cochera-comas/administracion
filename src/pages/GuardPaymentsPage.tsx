@@ -44,7 +44,7 @@ export function GuardPaymentsPage() {
 
       {isLoading && <p className="text-sm text-muted-foreground">Cargando...</p>}
       {isError && <p className="text-sm text-destructive">Error al cargar los pagos.</p>}
-      {payments && <GuardPaymentTable payments={payments} />}
+      {payments && guards && <GuardPaymentTable payments={payments} guards={guards} />}
     </div>
   )
 }

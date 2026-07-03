@@ -5,14 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-const numberFormatter = new Intl.NumberFormat('es', {
+const numberFormatter = new Intl.NumberFormat('es-PE', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
 
-// Formato genérico "$ 1.234,56" sin fijar una moneda/región específica.
+// Soles peruanos: "S/ 1,234.56"
 export function formatCurrency(amount: number) {
-  return `$ ${numberFormatter.format(amount)}`
+  return `S/ ${numberFormatter.format(amount)}`
 }
 
 export function monthStart(date: Date) {
