@@ -13,6 +13,7 @@ import { GuardsPage } from '@/pages/GuardsPage'
 import { GuardPaymentsPage } from '@/pages/GuardPaymentsPage'
 import { HourlyRentalsPage } from '@/pages/HourlyRentalsPage'
 import { MovementsPage } from '@/pages/MovementsPage'
+import { ExecutiveSummaryPage } from '@/pages/ExecutiveSummaryPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,7 @@ function App() {
                 <Route path="/guard-payments" element={<GuardPaymentsPage />} />
                 <Route path="/alquileres-hora" element={<HourlyRentalsPage />} />
                 <Route path="/movimientos" element={<MovementsPage />} />
+                <Route path="/resumen-ejecutivo" element={<ExecutiveSummaryPage />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

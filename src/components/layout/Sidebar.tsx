@@ -11,6 +11,7 @@ import {
   Banknote,
   Clock,
   ArrowLeftRight,
+  FileText,
   LogOut,
 } from 'lucide-react'
 
@@ -23,13 +24,14 @@ const links = [
   { to: '/guard-payments', label: 'Pagos a guardias', icon: Banknote },
   { to: '/alquileres-hora', label: 'Alquileres x hora', icon: Clock },
   { to: '/movimientos', label: 'Movimientos', icon: ArrowLeftRight },
+  { to: '/resumen-ejecutivo', label: 'Resumen ejecutivo', icon: FileText },
 ]
 
 export function Sidebar() {
   const { signOut } = useAuth()
 
   return (
-    <aside className="flex h-screen w-60 shrink-0 flex-col border-r bg-card">
+    <aside className="flex h-screen w-60 shrink-0 flex-col border-r bg-card print:hidden">
       <div className="px-4 py-5">
         <h1 className="text-lg font-semibold">Cochera</h1>
         <p className="text-xs text-muted-foreground">Panel administrativo</p>
