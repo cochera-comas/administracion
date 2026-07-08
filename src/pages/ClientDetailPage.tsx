@@ -19,7 +19,7 @@ import {
   useToggleVoucherVerified,
   getVoucherSignedUrl,
 } from '@/hooks/useClientPayments'
-import { useClientSpots } from '@/hooks/useParkingSpots'
+import { useClientSpots, useAssignSpot } from '@/hooks/useParkingSpots'
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog'
 import { ClientPaymentFormDialog } from '@/components/payments/ClientPaymentFormDialog'
 import { formatCurrency, computeLateFee, limaToday } from '@/lib/utils'
@@ -36,6 +36,7 @@ export function ClientDetailPage() {
   const { data: spots } = useClientSpots(id)
   const { data: payments, isLoading: loadingPayments } = useClientPaymentHistory(id)
   const toggleVerified = useToggleVoucherVerified()
+  const releaseSpot = useAssignSpot()
   const [openingVoucher, setOpeningVoucher] = useState<string | null>(null)
 
   async function openVoucher(path: string) {
@@ -81,11 +82,25 @@ export function ClientDetailPage() {
         <CardContent className="flex flex-wrap items-center gap-6">
           <div>
             <p className="text-xs text-muted-foreground">Cochera{spots && spots.length > 1 ? 's' : ''}</p>
-            <p className="text-sm font-medium">
-              {spots && spots.length > 0
-                ? spots.map((s) => `${s.gate} — ${s.row_label} — ${s.spot_label}`).join(' / ')
-                : 'Sin asignar'}
-            </p>
+            {spots && spots.length > 0 ? (
+              <ul className="space-y-0.5">
+                {spots.map((s) => (
+                  <li key={s.id} className="flex items-center gap-2 text-sm font-medium">
+                    {s.gate} — {s.row_label} — {s.spot_label}
+                    <button
+                      type="button"
+                      className="text-xs font-normal text-destructive hover:underline disabled:opacity-50"
+                      disabled={releaseSpot.isPending}
+                      onClick={() => releaseSpot.mutate({ spotId: s.id, clientId: null })}
+                    >
+                      Liberar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm font-medium">Sin asignar</p>
+            )}
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Cuota mensual</p>

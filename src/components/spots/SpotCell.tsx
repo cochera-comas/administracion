@@ -62,11 +62,12 @@ export function SpotCell({
         <button
           type="button"
           aria-label="Liberar cochera"
+          title="Liberar cochera"
           onClick={(e) => {
             e.stopPropagation()
             assignSpot.mutate({ spotId: spot.id, clientId: null })
           }}
-          className="absolute -top-1.5 -right-1.5 hidden size-4 items-center justify-center rounded-full bg-destructive text-white group-hover:flex"
+          className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white shadow-sm"
         >
           <X className="size-3" />
         </button>
